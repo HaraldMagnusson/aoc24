@@ -4,12 +4,19 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const extras = b.createModule(.{
+        .root_source_file = b.path("extras.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const day7_exe = b.addExecutable(.{
         .name = "day7",
         .root_source_file = b.path("day7/main.zig"),
         .target = target,
         .optimize = optimize,
     });
+    day7_exe.root_module.addImport("extras", extras);
     b.installArtifact(day7_exe);
     const day7_run_step = b.step("run7", "run day7 problem");
     const day7_run_exe = b.addRunArtifact(day7_exe);
