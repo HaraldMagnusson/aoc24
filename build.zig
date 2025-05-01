@@ -11,7 +11,10 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     b.installArtifact(day7_exe);
-    const day7_step = b.step("run7", "run day7 problem");
-    const day7_run = b.addRunArtifact(day7_exe);
-    day7_step.dependOn(&day7_run.step);
+    const day7_run_step = b.step("run7", "run day7 problem");
+    const day7_run_exe = b.addRunArtifact(day7_exe);
+    if (b.args) |args| {
+        day7_run_exe.addArgs(args);
+    }
+    day7_run_step.dependOn(&day7_run_exe.step);
 }
