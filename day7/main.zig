@@ -14,7 +14,7 @@ pub fn main() !void {
     defer alloc.free(puzzle_input);
 
     std.debug.print(
-        "\nPart 1: sum of valid calibrations: {d}\n\n",
+        "\nsum of valid calibrations: {d}\n\n",
         .{try calcSumOfValidCalibrations(puzzle_input, alloc)},
     );
 }
@@ -35,20 +35,20 @@ fn calcSumOfValidCalibrations(data: []const u8, alloc: std.mem.Allocator) !u64 {
     return valid_result_sum;
 }
 
-test "day7 aoc input" {
+test "day7 part 2 input" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
     try extras.runAocTest(
-        "day7/test1.input",
+        "day7/test2.input",
         u64,
         &calcSumOfValidCalibrations,
         arena.allocator(),
     );
 }
 
-const Operator = enum { add, mult };
-const operators = [_]Operator{ .add, .mult };
+const Operator = enum { add, mult, concat };
+const operators = [_]Operator{ .add, .mult, .concat };
 
 const Calibration = struct {
     result: u64,
@@ -83,11 +83,12 @@ const Calibration = struct {
     fn isValid(self: Calibration) bool {
         const start_value = self.values[0];
 
-        var is_valid = false;
         for (operators) |operator| {
-            is_valid = is_valid or self.isValidRecursiveCalc(operator, 1, start_value);
+            if (self.isValidRecursiveCalc(operator, 1, start_value)) {
+                return true;
+            }
         }
-        return is_valid;
+        return false;
     }
 
     fn isValidRecursiveCalc(
@@ -103,17 +104,24 @@ const Calibration = struct {
         const current_result = switch (op) {
             .add => cumulative_result + self.values[depth],
             .mult => cumulative_result * self.values[depth],
+            .concat => blk: {
+                var tmp_value = self.values[depth];
+                var mut_cumulative_result = cumulative_result;
+                const number_base = 10;
+                while (tmp_value > 0) {
+                    mut_cumulative_result *= number_base;
+                    tmp_value /= number_base;
+                }
+                break :blk mut_cumulative_result + self.values[depth];
+            },
         };
 
-        var is_valid = false;
         for (operators) |operator| {
-            is_valid = is_valid or self.isValidRecursiveCalc(
-                operator,
-                depth + 1,
-                current_result,
-            );
+            if (self.isValidRecursiveCalc(operator, depth + 1, current_result)) {
+                return true;
+            }
         }
-        return is_valid;
+        return false;
     }
 };
 
