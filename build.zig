@@ -24,4 +24,11 @@ pub fn build(b: *std.Build) void {
         day7_run_exe.addArgs(args);
     }
     day7_run_step.dependOn(&day7_run_exe.step);
+
+    const day7_test = b.addTest(.{
+        .root_module = day7_exe.root_module,
+    });
+    const day7_test_step = b.step("test7", "test day7 problem");
+    const day7_run_test = b.addRunArtifact(day7_test);
+    day7_test_step.dependOn(&day7_run_test.step);
 }

@@ -18,3 +18,21 @@ pub fn main() !void {
         std.debug.print("{s}\n", .{row});
     }
 }
+
+fn testFunc(data: []const u8) !i64 {
+    _ = data;
+    //return 3749;
+    return 42;
+}
+
+test "day7 aoc input" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    try extras.runAocTest(
+        "day7/test1.input",
+        i64,
+        &testFunc,
+        arena.allocator(),
+    );
+}
