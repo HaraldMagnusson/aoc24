@@ -10,25 +10,30 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const day7_exe = b.addExecutable(.{
-        .name = "day7",
-        .root_source_file = b.path("day7/main.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    day7_exe.root_module.addImport("extras", extras);
-    b.installArtifact(day7_exe);
-    const day7_run_step = b.step("run7", "run day7 problem");
-    const day7_run_exe = b.addRunArtifact(day7_exe);
-    if (b.args) |args| {
-        day7_run_exe.addArgs(args);
-    }
-    day7_run_step.dependOn(&day7_run_exe.step);
+    const puzzles = [_][]const u8{ "7", "8" };
 
-    const day7_test = b.addTest(.{
-        .root_module = day7_exe.root_module,
-    });
-    const day7_test_step = b.step("test7", "test day7 problem");
-    const day7_run_test = b.addRunArtifact(day7_test);
-    day7_test_step.dependOn(&day7_run_test.step);
+    inline for (puzzles) |puzzle| {
+        const src = "day" ++ puzzle ++ "/main.zig";
+        const exe = b.addExecutable(.{
+            .name = "day" ++ puzzle,
+            .root_source_file = b.path(src),
+            .target = target,
+            .optimize = optimize,
+        });
+        exe.root_module.addImport("extras", extras);
+        b.installArtifact(exe);
+        const run_step = b.step("run" ++ puzzle, "run day" ++ puzzle ++ " problem");
+        const run_exe = b.addRunArtifact(exe);
+        if (b.args) |args| {
+            run_exe.addArgs(args);
+        }
+        run_step.dependOn(&run_exe.step);
+
+        const @"test" = b.addTest(.{
+            .root_module = exe.root_module,
+        });
+        const test_step = b.step("test" ++ puzzle, "test day" ++ puzzle ++ " problem");
+        const run_test = b.addRunArtifact(@"test");
+        test_step.dependOn(&run_test.step);
+    }
 }
