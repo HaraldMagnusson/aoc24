@@ -37,11 +37,6 @@ pub const Point = struct {
     }
 };
 
-pub const Distance = struct {
-    row: isize,
-    col: isize,
-};
-
 test Point {
     const p1 = Point{ .row = 3, .col = 5 };
     const p2 = Point{ .row = 2, .col = 1 };
@@ -50,6 +45,56 @@ test Point {
 
     try std.testing.expectEqual(Distance{ .row = -1, .col = -4 }, dist);
     try std.testing.expectEqual(p2, p1.addDistance(dist));
+}
+
+pub const Distance = struct {
+    row: isize,
+    col: isize,
+
+    pub fn pseudoUnitVector(self: Distance) Distance {
+        const gcd = greatestCommonDenominator(isize, self.row, self.col);
+        return .{ .row = @divExact(self.row, gcd), .col = @divExact(self.col, gcd) };
+    }
+
+    fn greatestCommonDenominator(T: type, a: T, b: T) T {
+        comptime std.debug.assert(@typeInfo(T) == .int);
+
+        if (a == b) return a;
+
+        var previous: T = a;
+        var current: T = b;
+        var next: T = undefined;
+
+        if (@typeInfo(T).int.signedness == .signed) {
+            previous = @intCast(@abs(previous));
+            current = @intCast(@abs(current));
+        }
+
+        if (current > previous) {
+            const tmp = previous;
+            previous = current;
+            current = tmp;
+        }
+
+        while (current > 0) {
+            next = @mod(previous, current);
+            previous = current;
+            current = next;
+        }
+
+        return previous;
+    }
+};
+
+test Distance {
+    try std.testing.expectEqual(21, Distance.greatestCommonDenominator(u32, 1071, 462));
+    try std.testing.expectEqual(21, Distance.greatestCommonDenominator(i32, 1071, -462));
+    try std.testing.expectEqual(21, Distance.greatestCommonDenominator(i32, -1071, 462));
+
+    try std.testing.expectEqual(
+        Distance{ .row = 1, .col = -3 },
+        Distance.pseudoUnitVector(.{ .row = 3, .col = -9 }),
+    );
 }
 
 pub fn init(data: []const u8) @This() {

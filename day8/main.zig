@@ -8,8 +8,8 @@ const PositionList = std.ArrayList(Point);
 const PositionListMap = std.AutoHashMap(u8, PositionList);
 const AntinodeMap = std.AutoHashMap(Point, void);
 
-test "part 1 sample input" {
-    const test_file = "day8/test1.input";
+test "part 2 sample input" {
+    const test_file = "day8/test2.input";
 
     try extras.runAocTest(test_file, u64, &countUniqueAntinodes, std.testing.allocator);
 }
@@ -84,19 +84,20 @@ fn findAntinodes(map: PuzzleMap, position_list: PositionList, antinode_map: *Ant
         for (position_list.items[p1_idx + 1 ..]) |p2| {
             const p1 = position_list.items[p1_idx];
 
-            const dist = p1.distanceTo(p2);
+            const unit_vec = p1.distanceTo(p2).pseudoUnitVector();
 
-            const antinode1 = p1.subtractDistance(dist);
-            if (antinode1) |point| {
-                if (map.atPoint(point) != null) {
-                    try antinode_map.put(point, {});
-                }
+            var point: ?Point = p1;
+            while (point != null) {
+                if (map.atPoint(point.?) == null) break;
+                try antinode_map.put(point.?, {});
+                point = point.?.addDistance(unit_vec);
             }
-            const antinode2 = p2.addDistance(dist);
-            if (antinode2) |point| {
-                if (map.atPoint(point) != null) {
-                    try antinode_map.put(point, {});
-                }
+
+            point = p1.subtractDistance(unit_vec);
+            while (point != null) {
+                if (map.atPoint(point.?) == null) break;
+                try antinode_map.put(point.?, {});
+                point = point.?.subtractDistance(unit_vec);
             }
         }
     }
