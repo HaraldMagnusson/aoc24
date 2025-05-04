@@ -1,4 +1,5 @@
 const std = @import("std");
+pub const PuzzleMap = @import("PuzzleMap.zig");
 
 /// reads and returns a maximum of 100 MiB from the file given by the first cmd line argument
 pub fn readFileFromCmdArg(alloc: std.mem.Allocator) ![]const u8 {
