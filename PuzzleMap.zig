@@ -121,12 +121,21 @@ test "PuzzleMap" {
     const data = "abc\ndef\nghi\n";
 
     const map = @This().init(data);
-    try std.testing.expectEqual('a', map.atAssumeInside(0, 0));
-    try std.testing.expectEqual('d', map.atAssumeInside(1, 0));
-    try std.testing.expectEqual('b', map.atAssumeInside(0, 1));
-    try std.testing.expectEqual('h', map.at(2, 1));
-    try std.testing.expectEqual('i', map.at(2, 2));
-    try std.testing.expectEqual(null, map.at(3, 0));
-    try std.testing.expectEqual(null, map.at(0, 3));
-    try std.testing.expectEqual(null, map.at(42, 42));
+    try std.testing.expectEqual('a', map.atIndexAssumeInside(0, 0));
+    try std.testing.expectEqual('d', map.atIndexAssumeInside(1, 0));
+    try std.testing.expectEqual('b', map.atIndexAssumeInside(0, 1));
+    try std.testing.expectEqual('h', map.atIndex(2, 1));
+    try std.testing.expectEqual('i', map.atIndex(2, 2));
+    try std.testing.expectEqual(null, map.atIndex(3, 0));
+    try std.testing.expectEqual(null, map.atIndex(0, 3));
+    try std.testing.expectEqual(null, map.atIndex(42, 42));
+
+    try std.testing.expectEqual('a', map.atPointAssumeInside(Point{ .row = 0, .col = 0 }));
+    try std.testing.expectEqual('d', map.atPointAssumeInside(Point{ .row = 1, .col = 0 }));
+    try std.testing.expectEqual('b', map.atPointAssumeInside(Point{ .row = 0, .col = 1 }));
+    try std.testing.expectEqual('h', map.atPoint(Point{ .row = 2, .col = 1 }));
+    try std.testing.expectEqual('i', map.atPoint(Point{ .row = 2, .col = 2 }));
+    try std.testing.expectEqual(null, map.atPoint(Point{ .row = 3, .col = 0 }));
+    try std.testing.expectEqual(null, map.atPoint(Point{ .row = 0, .col = 3 }));
+    try std.testing.expectEqual(null, map.atPoint(Point{ .row = 42, .col = 42 }));
 }
