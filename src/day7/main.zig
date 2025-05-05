@@ -40,7 +40,7 @@ test "day7 part 2 input" {
     defer arena.deinit();
 
     try extras.runAocTest(
-        "day7/test2.input",
+        "src/day7/test2.input",
         u64,
         &calcSumOfValidCalibrations,
         arena.allocator(),

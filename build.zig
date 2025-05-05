@@ -5,7 +5,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const extras = b.createModule(.{
-        .root_source_file = b.path("extras.zig"),
+        .root_source_file = b.path("src/extras.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -13,7 +13,7 @@ pub fn build(b: *std.Build) void {
     const puzzles = [_][]const u8{ "7", "8", "9" };
 
     inline for (puzzles) |puzzle| {
-        const src = "day" ++ puzzle ++ "/main.zig";
+        const src = "src/day" ++ puzzle ++ "/main.zig";
         const exe = b.addExecutable(.{
             .name = "day" ++ puzzle,
             .root_source_file = b.path(src),

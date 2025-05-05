@@ -9,7 +9,7 @@ const PositionListMap = std.AutoHashMap(u8, PositionList);
 const AntinodeMap = std.AutoHashMap(Point, void);
 
 test "part 2 sample input" {
-    const test_file = "day8/test2.input";
+    const test_file = "src/day8/test2.input";
 
     try extras.runAocTest(test_file, u64, &countUniqueAntinodes, std.testing.allocator);
 }

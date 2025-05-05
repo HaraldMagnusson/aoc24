@@ -13,7 +13,7 @@ pub fn main() !void {
 }
 
 test "part 1 test" {
-    const test_filepath = "day9/test1.input";
+    const test_filepath = "src/day9/test1.input";
     const alloc = std.testing.allocator;
     try extras.runAocTest(test_filepath, u64, checksumOfCompactedFs, alloc);
 }
