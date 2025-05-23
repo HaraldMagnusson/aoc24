@@ -122,11 +122,42 @@ test Distance {
     try std.testing.expectEqual(21, Distance.greatestCommonDenominator(u32, 1071, 462));
     try std.testing.expectEqual(21, Distance.greatestCommonDenominator(i32, 1071, -462));
     try std.testing.expectEqual(21, Distance.greatestCommonDenominator(i32, -1071, 462));
+    try std.testing.expectEqual(21, Distance.greatestCommonDenominator(i32, -1071, -462));
 
     try std.testing.expectEqual(
         Distance{ .row = 1, .col = -3 },
         Distance.pseudoUnitVector(.{ .row = 3, .col = -9 }),
     );
+}
+
+pub const Direction = enum {
+    up,
+    up_left,
+    up_right,
+    down,
+    down_left,
+    down_right,
+    right,
+    left,
+
+    pub fn toDistance(self: Direction) Distance {
+        switch (self) {
+            .up => return Distance{ .row = -1, .col = 0 },
+            .up_left => return Distance{ .row = -1, .col = -1 },
+            .up_right => return Distance{ .row = -1, .col = 1 },
+            .down => return Distance{ .row = 1, .col = 0 },
+            .down_left => return Distance{ .row = 1, .col = -1 },
+            .down_right => return Distance{ .row = 1, .col = 1 },
+            .right => return Distance{ .row = 0, .col = 1 },
+            .left => return Distance{ .row = 0, .col = -1 },
+        }
+    }
+};
+
+test Direction {
+    const p1 = Point{ .row = 1, .col = 1 };
+    const p2 = p1.addDistance(Direction.down.toDistance());
+    try std.testing.expectEqual(Point{ .row = 2, .col = 1 }, p2.?);
 }
 
 pub fn init(data: []const u8) @This() {
