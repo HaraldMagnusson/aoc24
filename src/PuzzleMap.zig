@@ -1,3 +1,35 @@
+//! A data type used to interpret a puzzle input string from Advent of Code
+//! as a 2D array of characters. The puzzle input string must a sequence of
+//! rows of equal length, each ending with a newline (\n).
+//!
+//! # Example usage:
+//! ```zig
+//!     const PuzzleMap = @import("PuzzleMap.zig");
+//!
+//!     // the last row must also end with a \n
+//!     const data =
+//!         \\abc
+//!         \\def
+//!         \\ghi
+//!         \\
+//!     ;
+//!     const map = PuzzleMap.init(data);
+//!
+//!     // access data
+//!     const p0 = PuzzleMap.Point{ .row = 1, .col = 2 };
+//!     try std.testing.expectEqual('f', map.atPoint(p0));
+//!
+//!     // step around
+//!     const down = PuzzleMap.Distance{ .row = 1, .col = 0 };
+//!     const p1 = p0.addDistance(down).?; // {2, 2}
+//!     try std.testing.expectEqual('i', map.atPoint(p1));
+//!
+//!     // find minimal step in a given direction
+//!     const p2 = PuzzleMap.Point{ .row = 0, .col = 0 };
+//!     const direction = p2.distanceTo(p1).pseudoUnitVector();
+//!     try std.testing.expectEqual(PuzzleMap.Distance{ .row = 1, .col = 1 }, direction);
+//! ```
+
 const std = @import("std");
 
 map: []const u8,
@@ -163,7 +195,13 @@ pub fn isDistanceFromPointInside(self: @This(), dist: Distance, point: Point) bo
 }
 
 test "PuzzleMap" {
-    const data = "abc\ndef\nghi\n";
+    // the last row must also end with a \n
+    const data =
+        \\abc
+        \\def
+        \\ghi
+        \\
+    ;
 
     const map = @This().init(data);
     try std.testing.expectEqual('a', map.atIndexAssumeInside(0, 0));
@@ -183,4 +221,31 @@ test "PuzzleMap" {
     try std.testing.expectEqual(null, map.atPoint(Point{ .row = 3, .col = 0 }));
     try std.testing.expectEqual(null, map.atPoint(Point{ .row = 0, .col = 3 }));
     try std.testing.expectEqual(null, map.atPoint(Point{ .row = 42, .col = 42 }));
+}
+
+test "example" {
+    const PuzzleMap = @import("PuzzleMap.zig");
+
+    // the last row must also end with a \n
+    const data =
+        \\abc
+        \\def
+        \\ghi
+        \\
+    ;
+    const map = PuzzleMap.init(data);
+
+    // access data
+    const p0 = PuzzleMap.Point{ .row = 1, .col = 2 };
+    try std.testing.expectEqual('f', map.atPoint(p0));
+
+    // step around
+    const down = PuzzleMap.Distance{ .row = 1, .col = 0 };
+    const p1 = p0.addDistance(down).?; // {2, 2}
+    try std.testing.expectEqual('i', map.atPoint(p1));
+
+    // find minimal step in a given direction
+    const p2 = PuzzleMap.Point{ .row = 0, .col = 0 };
+    const direction = p2.distanceTo(p1).pseudoUnitVector();
+    try std.testing.expectEqual(PuzzleMap.Distance{ .row = 1, .col = 1 }, direction);
 }
