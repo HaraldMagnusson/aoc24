@@ -138,10 +138,16 @@ pub fn init(data: []const u8) @This() {
         if (ch != '\n') {
             continue;
         }
+
         if (!cols_found) {
             cols = idx;
             cols_found = true;
+            // assert that the data is a rectangle
+            std.debug.assert(@mod(data.len, cols + 1) == 0);
+        } else {
+            std.debug.assert(@mod(idx, cols + 1) == cols);
         }
+
         rows += 1;
     }
     const bounds = Point{ .row = rows, .col = cols };
