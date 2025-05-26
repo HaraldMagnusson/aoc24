@@ -1,7 +1,8 @@
 const std = @import("std");
 pub const PuzzleMap = @import("PuzzleMap.zig");
 
-/// reads and returns a maximum of 100 MiB from the file given by the first cmd line argument
+/// Reads and returns a maximum of 100 MiB from the file given by
+/// the first cmd line argument. Caller owns the returned memory.
 pub fn readFileFromCmdArg(alloc: std.mem.Allocator) ![]const u8 {
     var args = try std.process.argsWithAllocator(alloc);
     defer args.deinit();
@@ -26,6 +27,10 @@ pub fn readFileFromCmdArg(alloc: std.mem.Allocator) ![]const u8 {
     return try input_file.readToEndAlloc(alloc, max_buf_size);
 }
 
+/// Runs 'testFunc' on test data in the file given by 'data_filename'.
+/// The first row of the file must contain the expected result of
+/// 'testFunc'. The remaining rows in the file are passed to 'testFunc'.
+/// A maximum of 100 MiB is read from the file.
 pub fn runAocTest(
     data_filename: []const u8,
     comptime IntType: type,
