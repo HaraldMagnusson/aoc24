@@ -10,8 +10,10 @@ pub fn main() !void {
     defer alloc.free(input);
 
     const stone_count = try countStonesAfterBlinking(input, alloc);
-    std.debug.print("part 1: {d}\n", .{stone_count});
+    std.debug.print("total stones after blinking: {d}\n", .{stone_count});
 }
+
+const max_blinks = 75;
 
 test "part1" {
     const input_file = "src/day11/test1.in";
@@ -20,60 +22,98 @@ test "part1" {
 }
 
 fn countStonesAfterBlinking(data: []const u8, alloc: std.mem.Allocator) !u64 {
-    var list = try parseInput(data, alloc);
-    defer list.deinit();
-
-    const total_blinks = 25;
-    for (0..total_blinks) |_| {
-        list = try blink(&list, alloc);
-    }
-
-    return list.items.len;
-}
-
-fn parseInput(data: []const u8, alloc: std.mem.Allocator) !std.ArrayList(u64) {
+    const start_time = std.time.microTimestamp();
     var stone_iterator = std.mem.splitAny(u8, data, " \n");
-    var stone_list = std.ArrayList(u64).init(alloc);
-    errdefer stone_list.deinit();
 
-    while (stone_iterator.next()) |stone| {
-        if (stone.len == 0) continue;
+    // cache for storing stone at depth -> resulting stone count
+    var cache = std.AutoHashMap(Stone, u64).init(alloc);
+    try cache.ensureTotalCapacity(200000);
+    defer cache.deinit();
 
-        const number_base = 10;
-        const stone_value = try std.fmt.parseInt(u64, stone, number_base);
-        try stone_list.append(stone_value);
+    // const total_blinks = max_depth;
+    var total_count: u64 = 0;
+    while (stone_iterator.next()) |stone_str| {
+        if (stone_str.len == 0) {
+            continue;
+        }
+
+        const stone_val = try std.fmt.parseUnsigned(u64, stone_str, 10);
+
+        const start_time_stone = std.time.microTimestamp();
+        total_count += try blink(.{ .val = stone_val, .blinks = 0 }, &cache);
+        const stop_time_stone = std.time.microTimestamp();
+        std.debug.print(
+            "stone {d:10} took {} µs\n",
+            .{ stone_val, stop_time_stone - start_time_stone },
+        );
     }
 
-    return stone_list;
+    const stop_time = std.time.microTimestamp();
+    std.debug.print("total time: {} µs\n", .{stop_time - start_time});
+
+    std.debug.print("cache items: {}\n", .{cache.count()});
+    return total_count;
 }
 
-/// takes ownership of passed list and returns a new one
-fn blink(stones: *std.ArrayList(u64), alloc: std.mem.Allocator) !std.ArrayList(u64) {
-    var new_stones = std.ArrayList(u64).init(alloc);
-    defer stones.deinit();
+const Stone = struct {
+    val: u64,
+    blinks: usize,
+};
 
-    for (stones.items) |stone| {
-        if (stone == 0) {
-            try new_stones.append(1);
-            continue;
-        }
-
-        const stone_float: f64 = @floatFromInt(stone);
-        const digits: u64 = @intFromFloat(@floor(@log10(stone_float)) + 1);
-        if (@mod(digits, 2) == 0) {
-            const split_digits = digits / 2;
-            const split_factor = try std.math.powi(u64, 10, split_digits);
-            const left_stone = stone / split_factor;
-            const right_stone = @mod(stone, split_factor);
-
-            try new_stones.append(left_stone);
-            try new_stones.append(right_stone);
-
-            continue;
-        }
-
-        try new_stones.append(stone * 2024);
+fn blink(stone: Stone, cache: *std.AutoHashMap(Stone, u64)) !u64 {
+    if (stone.blinks == max_blinks) {
+        return 1;
     }
 
-    return new_stones;
+    const cached_count = cache.get(stone);
+    if (cached_count) |count| {
+        return count;
+    }
+
+    const new_blinks = stone.blinks + 1;
+    var count: u64 = 0;
+    if (stone.val == 0) {
+        count = try blink(.{ .val = 1, .blinks = new_blinks }, cache);
+    } else {
+        const digits = countDigits(stone.val);
+        if (digits & 1 == 0) {
+            const new_stones = splitInt(stone.val, digits);
+            const left_stone = Stone{ .val = new_stones.left, .blinks = new_blinks };
+            const right_stone = Stone{ .val = new_stones.right, .blinks = new_blinks };
+            count = try blink(left_stone, cache) + try blink(right_stone, cache);
+        } else {
+            count = try blink(.{ .val = stone.val * 2024, .blinks = new_blinks }, cache);
+        }
+    }
+
+    try cache.put(stone, count);
+    return count;
+}
+
+inline fn countDigits(num: u64) u32 {
+    var digits: u32 = 0;
+    var tmp_val = num;
+    while (tmp_val > 0) : (tmp_val /= 10) {
+        digits += 1;
+    }
+    return digits;
+}
+
+inline fn splitInt(num: u64, digits: u32) struct { left: u64, right: u64 } {
+    const split_factor: u32 = std.math.powi(u32, 10, digits / 2) catch unreachable;
+
+    const left: u64 = num / split_factor;
+    const right: u64 = @mod(num, split_factor);
+
+    return .{ .left = left, .right = right };
+}
+
+test countDigits {
+    try std.testing.expectEqual(1, countDigits(1));
+    try std.testing.expectEqual(2, countDigits(12));
+    try std.testing.expectEqual(3, countDigits(123));
+    try std.testing.expectEqual(4, countDigits(1234));
+    try std.testing.expectEqual(4, countDigits(1000));
+    try std.testing.expectEqual(4, countDigits(9999));
+    try std.testing.expectEqual(5, countDigits(10000));
 }
