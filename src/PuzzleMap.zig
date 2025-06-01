@@ -67,6 +67,10 @@ pub const Point = struct {
         const inverted_dist = Distance{ .row = -dist.row, .col = -dist.col };
         return self.addDistance(inverted_dist);
     }
+
+    pub fn stepInDirection(self: Point, dir: Direction) ?Point {
+        return self.addDistance(dir.toDistance());
+    }
 };
 
 test Point {
@@ -212,19 +216,25 @@ pub fn atIndexAssumeInside(self: @This(), row: usize, col: usize) u8 {
 }
 
 pub fn isDistanceFromPointInside(self: @This(), dist: Distance, point: Point) bool {
-    const row: isize = @as(isize, @intCast(point.row)) + dist.row;
-    const col: isize = @as(isize, @intCast(point.col)) + dist.col;
+    const new_point = point.addDistance(dist);
+    return self.isPointInside(new_point);
+}
 
-    if (row < 0) {
+pub fn isPointInside(self: @This(), point: ?Point) bool {
+    if (point == null) {
         return false;
     }
-    if (row >= self.bounds.row) {
+
+    if (point.?.row < 0) {
         return false;
     }
-    if (col < 0) {
+    if (point.?.row >= self.bounds.row) {
         return false;
     }
-    if (col >= self.bounds.col) {
+    if (point.?.col < 0) {
+        return false;
+    }
+    if (point.?.col >= self.bounds.col) {
         return false;
     }
 

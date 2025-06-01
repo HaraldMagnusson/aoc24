@@ -10,7 +10,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const puzzles = [_][]const u8{ "7", "8", "9", "10", "11" };
+    const puzzles = [_][]const u8{ "7", "8", "9", "10", "11", "12" };
 
     inline for (puzzles) |puzzle| {
         const src = "src/day" ++ puzzle ++ "/main.zig";
