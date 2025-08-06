@@ -156,6 +156,19 @@ pub const Direction = enum {
             .left => return Distance{ .row = 0, .col = -1 },
         }
     }
+
+    pub fn opposite(self: Direction) Direction {
+        return switch (self) {
+            .up => .down,
+            .up_left => .down_right,
+            .up_right => .down_left,
+            .down => .up,
+            .down_left => .up_right,
+            .down_right => .up_left,
+            .right => .left,
+            .left => .right,
+        };
+    }
 };
 
 test Direction {

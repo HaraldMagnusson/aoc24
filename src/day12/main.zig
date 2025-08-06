@@ -14,15 +14,22 @@ pub fn main() !void {
     defer alloc.free(puzzle_input);
 
     const cost = try totalFencePrice(puzzle_input, alloc);
-    std.debug.print("part 1: {}\n", .{cost});
+    std.debug.print("part 2: {}\n", .{cost});
 }
 
-test "part 1" {
+test "part 2" {
     const alloc = std.testing.allocator;
-    try extras.runAocTest("src/day12/test1.in", u64, totalFencePrice, alloc);
-    try extras.runAocTest("src/day12/test2.in", u64, totalFencePrice, alloc);
-    try extras.runAocTest("src/day12/test3.in", u64, totalFencePrice, alloc);
+    try extras.runAocTest("src/day12/test4.in", u64, totalFencePrice, alloc);
+    try extras.runAocTest("src/day12/test5.in", u64, totalFencePrice, alloc);
+    try extras.runAocTest("src/day12/test6.in", u64, totalFencePrice, alloc);
+    try extras.runAocTest("src/day12/test7.in", u64, totalFencePrice, alloc);
+    try extras.runAocTest("src/day12/test8.in", u64, totalFencePrice, alloc);
 }
+
+const Side = struct {
+    point: Point,
+    dir: Direction,
+};
 
 fn totalFencePrice(data: []const u8, alloc: std.mem.Allocator) !u64 {
     const farm = PuzzleMap.init(data);
@@ -39,6 +46,9 @@ fn totalFencePrice(data: []const u8, alloc: std.mem.Allocator) !u64 {
     var plot_queue = try std.ArrayList(Point).initCapacity(alloc, visited_underlying.len);
     defer plot_queue.deinit();
 
+    var sides = std.AutoHashMap(Side, void).init(alloc);
+    defer sides.deinit();
+
     var total_fence_cost: u64 = 0;
     for (0..farm.bounds.row) |row| {
         for (0..farm.bounds.col) |col| {
@@ -47,11 +57,15 @@ fn totalFencePrice(data: []const u8, alloc: std.mem.Allocator) !u64 {
             }
 
             var area: u64 = 0;
-            var perimeter: u64 = 0;
+            var side_count: u64 = 0;
             const crop = farm.atPointAssumeInside(Point{ .row = row, .col = col });
             plot_queue.appendAssumeCapacity(Point{ .row = row, .col = col });
+            sides.clearRetainingCapacity();
 
-            while (plot_queue.pop()) |point| {
+            // step through all plots in this region
+            while (plot_queue.items.len > 0) {
+                const point = plot_queue.orderedRemove(0);
+
                 if (visited[point.row][point.col]) {
                     continue;
                 }
@@ -59,36 +73,90 @@ fn totalFencePrice(data: []const u8, alloc: std.mem.Allocator) !u64 {
                 area += 1;
                 visited[point.row][point.col] = true;
 
-                const adjacent = [_]?Point{
-                    point.stepInDirection(.up),
-                    point.stepInDirection(.down),
-                    point.stepInDirection(.left),
-                    point.stepInDirection(.right),
-                };
+                const dirs = [_]Direction{ .up, .left, .right, .down };
 
-                for (adjacent) |maybe_adj_plot| {
-                    if (!farm.isPointInside(maybe_adj_plot)) {
-                        perimeter += 1;
+                for (dirs) |dir| {
+                    const adj_plot = point.stepInDirection(dir);
+                    // edge of region found if next plot is outside farm
+                    if (!farm.isPointInside(adj_plot)) {
+                        try sides.put(Side{ .point = point, .dir = dir }, {});
+                        if (!sideFoundPreviously(farm, point, dir, sides)) {
+                            side_count += 1;
+                        }
                         continue;
                     }
 
-                    const adj_plot = maybe_adj_plot.?;
-
-                    const adj_crop = farm.atPointAssumeInside(adj_plot);
+                    // edge of region found if next plot has different crop
+                    const adj_crop = farm.atPointAssumeInside(adj_plot.?);
                     if (adj_crop != crop) {
-                        perimeter += 1;
+                        try sides.put(Side{ .point = point, .dir = dir }, {});
+                        if (!sideFoundPreviously(farm, point, dir, sides)) {
+                            side_count += 1;
+                        }
                         continue;
                     }
 
                     // keep iterating over plots of the same crop
-                    plot_queue.appendAssumeCapacity(adj_plot);
+                    plot_queue.appendAssumeCapacity(adj_plot.?);
                 }
             }
 
-            // std.debug.print("crop: {c}, area: {d:4}, peri: {d:4}\n", .{ crop, area, perimeter });
-            total_fence_cost += area * perimeter;
+            // a region cannot have an odd side count
+            std.debug.assert(side_count & 1 == 0);
+            total_fence_cost += area * side_count;
         }
     }
 
     return total_fence_cost;
+}
+
+fn sideFoundPreviously(
+    farm: PuzzleMap,
+    point: Point,
+    dir: Direction,
+    sides: std.AutoHashMap(Side, void),
+) bool {
+    const crop = farm.atPointAssumeInside(point);
+
+    // search perpendicularly to dir for previously seen sides
+    const axis_to_search: Direction = switch (dir) {
+        .up, .down => .right,
+        .left, .right => .up,
+        else => unreachable,
+    };
+
+    const dirs_to_search: [2]Direction = .{ axis_to_search, axis_to_search.opposite() };
+    for (dirs_to_search) |dir_to_search| {
+        var search_point = point;
+        while (true) {
+            // edge of farm
+            search_point = search_point.stepInDirection(dir_to_search) orelse break;
+            if (!farm.isPointInside(search_point)) {
+                break;
+            }
+
+            // edge of region => convex corner of region
+            const search_crop = farm.atPointAssumeInside(search_point);
+            if (search_crop != crop) {
+                break;
+            }
+
+            // crop continues in direction dir => concave corner of region
+            // its okay if this point is outside of the farm => no concave corner
+            const opposite_point = search_point.stepInDirection(dir);
+            if (opposite_point) |dir_point| {
+                const dir_crop = farm.atPoint(dir_point);
+                if (dir_crop == crop) {
+                    break;
+                }
+            }
+
+            // have we seen this side before?
+            if (sides.contains(Side{ .point = search_point, .dir = dir })) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
